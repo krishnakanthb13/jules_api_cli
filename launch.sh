@@ -1,4 +1,5 @@
 #!/bin/bash
+printf "\033]0;Jules API CLI\007"
 
 # ============================================
 # Jules API CLI - Workflow-Based Interface
@@ -45,8 +46,8 @@ while true; do
     echo "  ============================================"
     echo "        JULES API CLI - Workflow"
     echo "  ============================================"
-    echo ""
     if [ -n "$CURRENT_SOURCE" ]; then
+        echo ""
         echo "   Current Source:  $CURRENT_SOURCE"
     fi
     if [ -n "$CURRENT_SESSION" ]; then
@@ -78,9 +79,9 @@ while true; do
     echo "   [9] List all my sessions"
     echo "   [10] Switch to different session"
     echo "   [0] Exit"
-    echo ""
     echo "  ============================================"
-    read -p "  Enter your choice: " CHOICE
+    echo ""
+    read -p "Enter your choice: " CHOICE
 
     case $CHOICE in
         0)

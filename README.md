@@ -4,6 +4,8 @@
 
 A command-line interface for the [Jules REST API](https://jules.google/docs/api/reference/) that provides simple, intuitive access to Jules's AI coding assistant capabilities.
 
+![Jules API CLI v0.0.7 Release](assets/release_v0.0.7.png)
+
 ## Features
 
 - **Sources** - List and inspect connected GitHub repositories.

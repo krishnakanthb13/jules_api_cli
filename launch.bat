@@ -1,4 +1,5 @@
 @echo off
+title Jules API CLI
 setlocal EnableDelayedExpansion
 
 REM ============================================
@@ -44,7 +45,7 @@ echo.
 echo  ============================================
 echo        JULES API CLI - Workflow
 echo  ============================================
-echo.
+if defined CURRENT_SOURCE echo.
 if defined CURRENT_SOURCE echo   Current Source:  %CURRENT_SOURCE%
 if defined CURRENT_SESSION echo   Current Session: %CURRENT_SESSION%
 if defined CURRENT_SOURCE echo.
@@ -71,9 +72,9 @@ echo   OTHER
 echo   [9] List all my sessions
 echo   [10] Switch to different session
 echo   [0] Exit
-echo.
 echo  ============================================
-set /p CHOICE="  Enter your choice: "
+echo.
+set /p CHOICE="Enter your choice: "
 
 if "%CHOICE%"=="0" goto EXIT
 if "%CHOICE%"=="1" goto STEP1_SOURCES
