@@ -89,6 +89,10 @@ def list_activities(
             data = client.get(endpoint, params)
             activities = data.get("activities", [])
 
+        if  format_type == "raw":
+            output(activities, "json")
+            return
+
         if format_type == "json":
             output(activities, format_type)
         else:

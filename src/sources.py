@@ -35,6 +35,10 @@ def list_sources(
             data = client.get("sources", params)
             sources = data.get("sources", [])
 
+        if format_type == "raw":
+            output(sources, "json")
+            return
+
         # Simplify for display
         display_data = []
         for source in sources:

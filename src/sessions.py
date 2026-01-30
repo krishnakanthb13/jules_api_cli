@@ -28,6 +28,10 @@ def list_sessions(
             data = client.get("sessions", {"pageSize": page_size})
             sessions = data.get("sessions", [])
 
+        if format_type == "raw":
+            output(sessions, "json")
+            return
+
         # Simplify for display
         display_data = []
         for session in sessions:

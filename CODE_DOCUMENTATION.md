@@ -39,7 +39,7 @@ The application follows a modular architecture where the CLI logic is separated 
 | `sessions.py` | Manages AI coding sessions. | `create_session()`, `list_sessions()`, `get_session()` |
 | `activities.py` | Tracks what the agent is doing. | `list_activities()`, `get_activity()` |
 | `sources.py` | Manages connected repositories. | `list_sources()`, `get_source()` |
-| `utils.py` | Formatting output (tables, JSON, minimal). | `output()`, `print_error()`, `print_success()` |
+| `utils.py` | Formatting output (tables, JSON, minimal, raw). | `output()`, `print_error()`, `print_success()` |
 
 ## Execution Flow
 

@@ -54,7 +54,7 @@ Documentation: https://jules.google/docs/api/reference/
     # Global format option
     parser.add_argument(
         "--format", "-f",
-        choices=["json", "table", "minimal"],
+        choices=["json", "table", "minimal", "raw"],
         default="table",
         help="Output format (default: table)",
     )

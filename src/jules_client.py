@@ -35,9 +35,11 @@ class JulesClient:
             sys.exit(1)
 
         self.session = requests.Session()
+        from . import __version__
         self.session.headers.update({
             "x-goog-api-key": self.api_key,
             "Content-Type": "application/json",
+            "User-Agent": f"Jules-API-CLI/{__version__}",
         })
 
     def _handle_response(self, response: requests.Response) -> dict:

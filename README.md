@@ -92,7 +92,7 @@ python -m src.cli activities get <session_id> <activity_id>
 
 | Flag | Shortcut | Description |
 |:--- |:--- |:--- |
-| `--format` | `-f` | Output format: `json`, `table`, `minimal` (default: `table`) |
+| `--format` | `-f` | Output format: `json`, `table`, `minimal`, `raw` (default: `table`) |
 | `--prompt-file`| `-F` | (sessions create) Path to a `.md` or `.txt` file for the prompt |
 | `--version` | `-V` | Show version information |
 | `--help` | `-h` | Show help for any command |
