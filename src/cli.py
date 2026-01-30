@@ -121,8 +121,8 @@ Documentation: https://jules.google/docs/api/reference/
     )
     sessions_create.add_argument(
         "--source", "-s",
-        required=True,
-        help="Source name (e.g., 'github-owner-repo') (required)",
+        default=None,
+        help="Source name (e.g., 'github-owner-repo'). Not needed with --repoless",
     )
     sessions_create.add_argument(
         "--branch", "-b",
@@ -134,6 +134,11 @@ Documentation: https://jules.google/docs/api/reference/
         help="Session title (optional)",
     )
     sessions_create.add_argument(
+        "--repoless", "-r",
+        action="store_true",
+        help="Create a repoless session (serverless dev environment, no repo needed)",
+    )
+    sessions_create.add_argument(
         "--require-approval",
         action="store_true",
         help="Require explicit plan approval before execution",
@@ -141,7 +146,7 @@ Documentation: https://jules.google/docs/api/reference/
     sessions_create.add_argument(
         "--auto-pr",
         action="store_true",
-        help="Automatically create PR when code is ready",
+        help="Automatically create PR when code is ready (not for repoless)",
     )
 
     # sessions delete
@@ -227,6 +232,12 @@ def main() -> int:
         elif args.subcommand == "get":
             sessions.get_session(args.session_id, format_type=format_type)
         elif args.subcommand == "create":
+            # Validate: either repoless or source must be provided
+            if not args.repoless and not args.source:
+                print("Error: Either --source or --repoless is required.")
+                print("  Use --source for repository-based sessions")
+                print("  Use --repoless for serverless sessions without a repo")
+                return 1
             sessions.create_session(
                 prompt=args.prompt,
                 source=args.source,
@@ -234,6 +245,7 @@ def main() -> int:
                 title=args.title,
                 require_approval=args.require_approval,
                 auto_pr=args.auto_pr,
+                repoless=args.repoless,
                 format_type=format_type,
             )
         elif args.subcommand == "delete":

@@ -88,11 +88,12 @@ def get_session(session_id: str, format_type: str = "table") -> None:
 
 def create_session(
     prompt: str,
-    source: str,
+    source: Optional[str] = None,
     branch: str = "main",
     title: Optional[str] = None,
     require_approval: bool = False,
     auto_pr: bool = False,
+    repoless: bool = False,
     format_type: str = "table",
 ) -> None:
     """
@@ -100,28 +101,32 @@ def create_session(
 
     Args:
         prompt: Task description for Jules
-        source: Source name (e.g., 'sources/github-owner-repo')
+        source: Source name (e.g., 'sources/github-owner-repo'), optional for repoless
         branch: Starting branch name
         title: Optional session title
         require_approval: Require explicit plan approval
         auto_pr: Automatically create PR when ready
+        repoless: Create a repoless session (no repository needed)
         format_type: Output format (json/table/minimal)
     """
     client = get_client()
 
-    # Ensure source has proper prefix
-    if not source.startswith("sources/"):
-        source = f"sources/{source}"
-
     body = {
         "prompt": prompt,
-        "sourceContext": {
+    }
+
+    # Only add sourceContext if not repoless and source is provided
+    if not repoless and source:
+        # Ensure source has proper prefix
+        if not source.startswith("sources/"):
+            source = f"sources/{source}"
+
+        body["sourceContext"] = {
             "source": source,
             "githubRepoContext": {
                 "startingBranch": branch,
             },
-        },
-    }
+        }
 
     if title:
         body["title"] = title
@@ -129,12 +134,13 @@ def create_session(
     if require_approval:
         body["requirePlanApproval"] = True
 
-    if auto_pr:
+    if auto_pr and not repoless:
         body["automationMode"] = "AUTO_CREATE_PR"
 
     try:
         data = client.post("sessions", body)
-        print_success(f"Session created: {data.get('id', 'unknown')}")
+        session_type = "Repoless session" if repoless else "Session"
+        print_success(f"{session_type} created: {data.get('id', 'unknown')}")
 
         if format_type == "json":
             output(data, format_type)
@@ -145,6 +151,7 @@ def create_session(
                 "title": data.get("title", ""),
                 "state": data.get("state", ""),
                 "url": data.get("url", ""),
+                "type": "Repoless" if repoless else "Repository-based",
             }
             output(display, format_type)
 

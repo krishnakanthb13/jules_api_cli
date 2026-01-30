@@ -57,25 +57,26 @@ while true; do
         echo "  --------------------------------------------"
     fi
     echo ""
-    echo "   STEP 1: Select a Repository"
+    echo "   STEP 1: Select a Repository (optional)"
     echo "   [1] List sources & select one"
     echo ""
     echo "   STEP 2: Create a Session"
-    echo "   [2] Create new session"
+    echo "   [2] Create session with repository"
+    echo "   [3] Create REPOLESS session (no repo needed)"
     echo ""
     echo "   STEP 3: Monitor & Interact"
-    echo "   [3] Check session status"
-    echo "   [4] View activities"
-    echo "   [5] Send a message"
-    echo "   [6] Approve plan"
+    echo "   [4] Check session status"
+    echo "   [5] View activities"
+    echo "   [6] Send a message"
+    echo "   [7] Approve plan"
     echo ""
     echo "   STEP 4: View Results"
-    echo "   [7] View session outputs (PRs)"
+    echo "   [8] View session outputs (PRs/files)"
     echo ""
     echo "  --------------------------------------------"
     echo "   OTHER"
-    echo "   [8] List all my sessions"
-    echo "   [9] Switch to different session"
+    echo "   [9] List all my sessions"
+    echo "   [10] Switch to different session"
     echo "   [0] Exit"
     echo ""
     echo "  ============================================"
@@ -117,17 +118,18 @@ while true; do
             ;;
 
         # ============================================
-        # STEP 2: Create a Session
+        # STEP 2: Create Session (with repo)
         # ============================================
         2)
             clear
             echo ""
             echo "  ============================================"
-            echo "   STEP 2: Create a Session"
+            echo "   STEP 2: Create Session (with Repository)"
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SOURCE" ]; then
                 echo "  ⚠ No source selected! Please complete Step 1 first."
+                echo "  Or use option [3] for a repoless session."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
@@ -156,16 +158,46 @@ while true; do
                 run_cli sessions create -p "$PROMPT" -s "$CURRENT_SOURCE" -b "$BRANCH" -t "$TITLE" $EXTRA_ARGS
             fi
 
-            # Get the latest session ID
-            LATEST_ID=$(run_cli sessions list --format minimal 2>/dev/null | head -n 1)
-            if [ -n "$LATEST_ID" ]; then
-                CURRENT_SESSION="$LATEST_ID"
-                echo ""
-                echo "  ✓ Session created! ID: $CURRENT_SESSION"
-                echo ""
-                echo "  Jules is now working on your task."
-                echo "  Go to Step 3 to monitor progress!"
+            echo ""
+            echo "  ✓ Session created!"
+            echo "  Use option [9] to list sessions and switch."
+            echo "  Then go to Step 3 to monitor progress."
+            echo ""
+            read -p "  Press Enter to continue..."
+            ;;
+
+        # ============================================
+        # STEP 2: Create Repoless Session
+        # ============================================
+        3)
+            clear
+            echo ""
+            echo "  ============================================"
+            echo "   STEP 2: Create REPOLESS Session"
+            echo "  ============================================"
+            echo ""
+            echo "  Repoless sessions run in a serverless cloud"
+            echo "  environment with Python, Node, Rust, Bun, etc."
+            echo "  No repository needed!"
+            echo ""
+            read -p "  What would you like Jules to do? " PROMPT
+            echo ""
+            read -p "  Session title (optional): " TITLE
+
+            echo ""
+            echo "  Creating repoless session..."
+            echo ""
+
+            if [ -z "$TITLE" ]; then
+                run_cli sessions create -p "$PROMPT" --repoless
+            else
+                run_cli sessions create -p "$PROMPT" -t "$TITLE" --repoless
             fi
+
+            echo ""
+            echo "  ✓ Repoless session created!"
+            echo "  Use option [9] to list sessions and switch."
+            echo "  Then go to Step 3 to monitor progress."
             echo ""
             read -p "  Press Enter to continue..."
             ;;
@@ -173,7 +205,7 @@ while true; do
         # ============================================
         # STEP 3: Monitor & Interact
         # ============================================
-        3)
+        4)
             clear
             echo ""
             echo "  ============================================"
@@ -181,7 +213,7 @@ while true; do
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SESSION" ]; then
-                echo "  ⚠ No session selected! Create one in Step 2 or use option 9."
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
@@ -193,7 +225,7 @@ while true; do
             read -p "  Press Enter to continue..."
             ;;
 
-        4)
+        5)
             clear
             echo ""
             echo "  ============================================"
@@ -201,7 +233,7 @@ while true; do
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SESSION" ]; then
-                echo "  ⚠ No session selected! Create one in Step 2 or use option 9."
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
@@ -213,7 +245,7 @@ while true; do
             read -p "  Press Enter to continue..."
             ;;
 
-        5)
+        6)
             clear
             echo ""
             echo "  ============================================"
@@ -221,7 +253,7 @@ while true; do
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SESSION" ]; then
-                echo "  ⚠ No session selected! Create one in Step 2 or use option 9."
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
@@ -237,7 +269,7 @@ while true; do
             read -p "  Press Enter to continue..."
             ;;
 
-        6)
+        7)
             clear
             echo ""
             echo "  ============================================"
@@ -245,7 +277,7 @@ while true; do
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SESSION" ]; then
-                echo "  ⚠ No session selected! Create one in Step 2 or use option 9."
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
@@ -262,7 +294,7 @@ while true; do
         # ============================================
         # STEP 4: View Results
         # ============================================
-        7)
+        8)
             clear
             echo ""
             echo "  ============================================"
@@ -270,14 +302,14 @@ while true; do
             echo "  ============================================"
             echo ""
             if [ -z "$CURRENT_SESSION" ]; then
-                echo "  ⚠ No session selected! Create one in Step 2 or use option 9."
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
                 echo ""
                 read -p "  Press Enter to continue..."
                 continue
             fi
             echo "  Session: $CURRENT_SESSION"
             echo ""
-            echo "  Fetching session details (including PR links)..."
+            echo "  Fetching session details (including PR links/files)..."
             echo ""
             run_cli sessions get "$CURRENT_SESSION" --format json
             echo ""
@@ -287,7 +319,7 @@ while true; do
         # ============================================
         # OTHER OPTIONS
         # ============================================
-        8)
+        9)
             clear
             echo ""
             echo "  ============================================"
@@ -299,7 +331,7 @@ while true; do
             read -p "  Press Enter to continue..."
             ;;
 
-        9)
+        10)
             clear
             echo ""
             echo "  ============================================"
