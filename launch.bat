@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 REM ============================================
-REM Jules API CLI - Interactive Menu
+REM Jules API CLI - Workflow-Based Interface
 REM ============================================
 
 cd /d "%~dp0"
@@ -12,10 +12,8 @@ where uv >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo.
     echo  ERROR: uv is not installed!
-    echo.
     echo  Install with: pip install uv
     echo  Or: winget install astral-sh.uv
-    echo.
     pause
     exit /b 1
 )
@@ -36,152 +34,296 @@ if not exist ".env" (
     )
 )
 
-:MENU
+REM Store current session for workflow
+set CURRENT_SESSION=
+set CURRENT_SOURCE=
+
+:MAIN_MENU
 cls
 echo.
 echo  ============================================
-echo        JULES API CLI
+echo        JULES API CLI - Workflow
 echo  ============================================
 echo.
-echo   SOURCES (Repositories)
-echo   [1] List all sources
-echo   [2] Get source details
+if defined CURRENT_SOURCE echo   Current Source:  %CURRENT_SOURCE%
+if defined CURRENT_SESSION echo   Current Session: %CURRENT_SESSION%
+if defined CURRENT_SOURCE echo.
+if defined CURRENT_SOURCE echo  --------------------------------------------
 echo.
-echo   SESSIONS
-echo   [3] List all sessions
-echo   [4] Get session details
-echo   [5] Create new session
-echo   [6] Send message to session
-echo   [7] Approve plan
-echo   [8] Delete session
+echo   STEP 1: Select a Repository
+echo   [1] List sources ^& select one
 echo.
-echo   ACTIVITIES
-echo   [9] List activities for session
-echo   [10] Get activity details
+echo   STEP 2: Create a Session
+echo   [2] Create new session
 echo.
+echo   STEP 3: Monitor ^& Interact
+echo   [3] Check session status
+echo   [4] View activities
+echo   [5] Send a message
+echo   [6] Approve plan
+echo.
+echo   STEP 4: View Results
+echo   [7] View session outputs ^(PRs^)
+echo.
+echo  --------------------------------------------
 echo   OTHER
-echo   [11] Show help
+echo   [8] List all my sessions
+echo   [9] Switch to different session
 echo   [0] Exit
 echo.
 echo  ============================================
 set /p CHOICE="  Enter your choice: "
 
 if "%CHOICE%"=="0" goto EXIT
-if "%CHOICE%"=="1" goto SOURCES_LIST
-if "%CHOICE%"=="2" goto SOURCES_GET
-if "%CHOICE%"=="3" goto SESSIONS_LIST
-if "%CHOICE%"=="4" goto SESSIONS_GET
-if "%CHOICE%"=="5" goto SESSIONS_CREATE
-if "%CHOICE%"=="6" goto SESSIONS_SEND
-if "%CHOICE%"=="7" goto SESSIONS_APPROVE
-if "%CHOICE%"=="8" goto SESSIONS_DELETE
-if "%CHOICE%"=="9" goto ACTIVITIES_LIST
-if "%CHOICE%"=="10" goto ACTIVITIES_GET
-if "%CHOICE%"=="11" goto SHOW_HELP
+if "%CHOICE%"=="1" goto STEP1_SOURCES
+if "%CHOICE%"=="2" goto STEP2_CREATE
+if "%CHOICE%"=="3" goto STEP3_STATUS
+if "%CHOICE%"=="4" goto STEP3_ACTIVITIES
+if "%CHOICE%"=="5" goto STEP3_MESSAGE
+if "%CHOICE%"=="6" goto STEP3_APPROVE
+if "%CHOICE%"=="7" goto STEP4_RESULTS
+if "%CHOICE%"=="8" goto LIST_SESSIONS
+if "%CHOICE%"=="9" goto SWITCH_SESSION
 
-echo  Invalid choice. Press any key to try again...
-pause >nul
-goto MENU
+echo  Invalid choice.
+timeout /t 1 >nul
+goto MAIN_MENU
 
-:SOURCES_LIST
+REM ============================================
+REM STEP 1: Select a Repository
+REM ============================================
+:STEP1_SOURCES
+cls
 echo.
-echo  Fetching sources...
+echo  ============================================
+echo   STEP 1: Select a Repository
+echo  ============================================
+echo.
+echo  Fetching your connected repositories...
 echo.
 uv run --with requests --with python-dotenv --with tabulate python -m src.cli sources list
-goto PAUSE_AND_MENU
+echo.
+echo  --------------------------------------------
+set /p SOURCE_INPUT="  Enter source ID to select (or press Enter to go back): "
+if "%SOURCE_INPUT%"=="" goto MAIN_MENU
+set CURRENT_SOURCE=%SOURCE_INPUT%
+echo.
+echo  Source selected: %CURRENT_SOURCE%
+echo.
+echo  Ready for Step 2: Create a session!
+echo.
+pause
+goto MAIN_MENU
 
-:SOURCES_GET
+REM ============================================
+REM STEP 2: Create a Session
+REM ============================================
+:STEP2_CREATE
+cls
 echo.
-set /p SOURCE_ID="  Enter source ID (e.g., github-owner-repo): "
+echo  ============================================
+echo   STEP 2: Create a Session
+echo  ============================================
 echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sources get "%SOURCE_ID%"
-goto PAUSE_AND_MENU
-
-:SESSIONS_LIST
+if not defined CURRENT_SOURCE (
+    echo  No source selected! Please complete Step 1 first.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Using source: %CURRENT_SOURCE%
 echo.
-echo  Fetching sessions...
+set /p PROMPT="  What would you like Jules to do? "
 echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions list
-goto PAUSE_AND_MENU
-
-:SESSIONS_GET
-echo.
-set /p SESSION_ID="  Enter session ID: "
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions get "%SESSION_ID%"
-goto PAUSE_AND_MENU
-
-:SESSIONS_CREATE
-echo.
-echo  Create New Session
-echo  ------------------
-set /p PROMPT="  Task description: "
-set /p SOURCE="  Source ID (e.g., github-owner-repo): "
 set /p BRANCH="  Branch (press Enter for 'main'): "
 if "%BRANCH%"=="" set BRANCH=main
-set /p TITLE="  Session title (optional, press Enter to skip): "
-set /p AUTO_PR="  Auto-create PR? (y/n): "
+set /p TITLE="  Session title (optional): "
+set /p AUTO_PR="  Auto-create PR when done? (y/n): "
 
 set EXTRA_ARGS=
 if /i "%AUTO_PR%"=="y" set EXTRA_ARGS=--auto-pr
 
+echo.
+echo  Creating session...
+echo.
+
 if "%TITLE%"=="" (
-    uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" -s "%SOURCE%" -b "%BRANCH%" %EXTRA_ARGS%
+    for /f "tokens=*" %%i in ('uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" -s "%CURRENT_SOURCE%" -b "%BRANCH%" %EXTRA_ARGS% --format minimal') do set SESSION_OUTPUT=%%i
 ) else (
-    uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" -s "%SOURCE%" -b "%BRANCH%" -t "%TITLE%" %EXTRA_ARGS%
+    for /f "tokens=*" %%i in ('uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" -s "%CURRENT_SOURCE%" -b "%BRANCH%" -t "%TITLE%" %EXTRA_ARGS% --format minimal') do set SESSION_OUTPUT=%%i
 )
-goto PAUSE_AND_MENU
 
-:SESSIONS_SEND
-echo.
-set /p SESSION_ID="  Enter session ID: "
-set /p MESSAGE="  Message to send: "
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions send "%SESSION_ID%" "%MESSAGE%"
-goto PAUSE_AND_MENU
+REM Try to extract session ID (it's the first line after success message)
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions list --format json > temp_sessions.json 2>nul
+for /f "tokens=2 delims=:," %%a in ('findstr /c:"\"id\"" temp_sessions.json 2^>nul') do (
+    set CURRENT_SESSION=%%~a
+    set CURRENT_SESSION=!CURRENT_SESSION:"=!
+    set CURRENT_SESSION=!CURRENT_SESSION: =!
+    goto SESSION_FOUND
+)
+:SESSION_FOUND
+del temp_sessions.json 2>nul
 
-:SESSIONS_APPROVE
 echo.
-set /p SESSION_ID="  Enter session ID to approve plan: "
+if defined CURRENT_SESSION (
+    echo  Session created! ID: %CURRENT_SESSION%
+    echo.
+    echo  Jules is now working on your task.
+    echo  Go to Step 3 to monitor progress!
+) else (
+    echo  Session created! Check 'List all my sessions' to get the ID.
+)
 echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions approve "%SESSION_ID%"
-goto PAUSE_AND_MENU
+pause
+goto MAIN_MENU
 
-:SESSIONS_DELETE
-echo.
-set /p SESSION_ID="  Enter session ID to delete: "
-set /p CONFIRM="  Are you sure? (y/n): "
-if /i not "%CONFIRM%"=="y" goto MENU
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions delete "%SESSION_ID%"
-goto PAUSE_AND_MENU
-
-:ACTIVITIES_LIST
-echo.
-set /p SESSION_ID="  Enter session ID: "
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli activities list "%SESSION_ID%"
-goto PAUSE_AND_MENU
-
-:ACTIVITIES_GET
-echo.
-set /p SESSION_ID="  Enter session ID: "
-set /p ACTIVITY_ID="  Enter activity ID: "
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli activities get "%SESSION_ID%" "%ACTIVITY_ID%"
-goto PAUSE_AND_MENU
-
-:SHOW_HELP
-echo.
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli --help
-goto PAUSE_AND_MENU
-
-:PAUSE_AND_MENU
+REM ============================================
+REM STEP 3: Monitor & Interact
+REM ============================================
+:STEP3_STATUS
+cls
 echo.
 echo  ============================================
-echo  Press any key to return to menu...
-pause >nul
-goto MENU
+echo   STEP 3: Check Session Status
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 9.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions get "%CURRENT_SESSION%"
+echo.
+pause
+goto MAIN_MENU
+
+:STEP3_ACTIVITIES
+cls
+echo.
+echo  ============================================
+echo   STEP 3: View Session Activities
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 9.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli activities list "%CURRENT_SESSION%"
+echo.
+pause
+goto MAIN_MENU
+
+:STEP3_MESSAGE
+cls
+echo.
+echo  ============================================
+echo   STEP 3: Send Message to Jules
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 9.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+set /p MESSAGE="  Your message: "
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions send "%CURRENT_SESSION%" "%MESSAGE%"
+echo.
+echo  Message sent! Check activities to see Jules' response.
+echo.
+pause
+goto MAIN_MENU
+
+:STEP3_APPROVE
+cls
+echo.
+echo  ============================================
+echo   STEP 3: Approve Plan
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 9.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+echo  Approving the plan...
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions approve "%CURRENT_SESSION%"
+echo.
+pause
+goto MAIN_MENU
+
+REM ============================================
+REM STEP 4: View Results
+REM ============================================
+:STEP4_RESULTS
+cls
+echo.
+echo  ============================================
+echo   STEP 4: View Session Results
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 9.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+echo  Fetching session details (including PR links)...
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions get "%CURRENT_SESSION%" --format json
+echo.
+pause
+goto MAIN_MENU
+
+REM ============================================
+REM OTHER OPTIONS
+REM ============================================
+:LIST_SESSIONS
+cls
+echo.
+echo  ============================================
+echo   All My Sessions
+echo  ============================================
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions list
+echo.
+pause
+goto MAIN_MENU
+
+:SWITCH_SESSION
+cls
+echo.
+echo  ============================================
+echo   Switch to Different Session
+echo  ============================================
+echo.
+echo  Current sessions:
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions list
+echo.
+set /p NEW_SESSION="  Enter session ID to switch to: "
+if not "%NEW_SESSION%"=="" set CURRENT_SESSION=%NEW_SESSION%
+echo.
+echo  Switched to session: %CURRENT_SESSION%
+echo.
+pause
+goto MAIN_MENU
 
 :EXIT
 echo.
