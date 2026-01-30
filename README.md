@@ -68,8 +68,11 @@ python -m src.cli sources get github-owner-repo
 # Create a standard session
 python -m src.cli sessions create --prompt "Fix typo" --source github-owner-repo
 
-# Create a REPOLESS session (serverless cloud environment)
+# Create a REPOLESS session using a text prompt
 python -m src.cli sessions create --prompt "Write a python script to parse JSON" --repoless
+
+# Create a REPOLESS session using a file (.md or .txt)
+python -m src.cli sessions create --prompt-file ./task.md --repoless
 
 # Interact with a session
 python -m src.cli sessions send <session_id> "Add more comments"
@@ -90,6 +93,7 @@ python -m src.cli activities get <session_id> <activity_id>
 | Flag | Shortcut | Description |
 |:--- |:--- |:--- |
 | `--format` | `-f` | Output format: `json`, `table`, `minimal` (default: `table`) |
+| `--prompt-file`| `-F` | (sessions create) Path to a `.md` or `.txt` file for the prompt |
 | `--version` | `-V` | Show version information |
 | `--help` | `-h` | Show help for any command |
 

@@ -177,7 +177,47 @@ echo  Repoless sessions run in a serverless cloud
 echo  environment with Python, Node, Rust, Bun, etc.
 echo  No repository needed!
 echo.
-set /p PROMPT="  What would you like Jules to do? "
+echo   [1] Enter prompt as text
+echo   [2] Load prompt from file (.md/.txt)
+echo   [3] Load prompt from directory
+echo.
+set /p P_TYPE="  Choice: "
+
+if "%P_TYPE%"=="2" (
+    set /p P_FILE="  Enter path to file: "
+    set PROMPT_ARG=-F "!P_FILE!"
+) else if "%P_TYPE%"=="3" (
+    set /p P_DIR="  Enter directory path: "
+    echo.
+    echo   Files in !P_DIR!:
+    set i=0
+    for /f "delims=" %%f in ('dir /b "!P_DIR!\*.md" "!P_DIR!\*.txt" 2^>nul') do (
+        set /a i+=1
+        set "file[!i!]=%%f"
+        echo   [!i!] %%f
+    )
+    if !i! equ 0 (
+        echo   No .md or .txt files found in that directory.
+        pause
+        goto STEP2_REPOLESS
+    )
+    echo.
+    set /p P_NUM="  Select file number: "
+    set "SELECTED_FILE="
+    for /l %%n in (1,1,!i!) do (
+        if "%%n"=="!P_NUM!" set "SELECTED_FILE=!file[%%n]!"
+    )
+    if "!SELECTED_FILE!"=="" (
+        echo   Invalid selection.
+        pause
+        goto STEP2_REPOLESS
+    )
+    set PROMPT_ARG=-F "!P_DIR!\!SELECTED_FILE!"
+) else (
+    set /p P_TEXT="  What would you like Jules to do? "
+    set PROMPT_ARG=-p "!P_TEXT!"
+)
+
 echo.
 set /p TITLE="  Session title (optional): "
 
@@ -185,15 +225,14 @@ echo.
 echo  Creating repoless session...
 echo.
 
-if "%TITLE%"=="" (
-    uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" --repoless
-) else (
-    uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "%PROMPT%" -t "%TITLE%" --repoless
-)
+set TITLE_ARG=
+if not "%TITLE%"=="" set TITLE_ARG=-t "%TITLE%"
+
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create !PROMPT_ARG! !TITLE_ARG! --repoless
 
 echo.
 echo  Repoless session created!
-echo  Use option [9] to list sessions and switch.
+echo  Use option [10] to list sessions and switch.
 echo  Then go to Step 3 to monitor progress.
 echo.
 pause

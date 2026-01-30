@@ -116,8 +116,11 @@ Documentation: https://jules.google/docs/api/reference/
     sessions_create = sessions_sub.add_parser("create", help="Create a new session")
     sessions_create.add_argument(
         "--prompt", "-p",
-        required=True,
-        help="Task description for Jules (required)",
+        help="Task description for Jules",
+    )
+    sessions_create.add_argument(
+        "--prompt-file", "-F",
+        help="Path to a .md or .txt file containing the prompt",
     )
     sessions_create.add_argument(
         "--source", "-s",
@@ -232,14 +235,33 @@ def main() -> int:
         elif args.subcommand == "get":
             sessions.get_session(args.session_id, format_type=format_type)
         elif args.subcommand == "create":
+            # Handle prompt from file
+            prompt = args.prompt
+            if args.prompt_file:
+                try:
+                    import os
+                    if not os.path.exists(args.prompt_file):
+                        print(f"Error: Prompt file not found: {args.prompt_file}")
+                        return 1
+                    with open(args.prompt_file, "r", encoding="utf-8") as f:
+                        prompt = f.read()
+                except Exception as e:
+                    print(f"Error reading prompt file: {e}")
+                    return 1
+
+            if not prompt:
+                print("Error: Either --prompt or --prompt-file is required.")
+                return 1
+
             # Validate: either repoless or source must be provided
             if not args.repoless and not args.source:
                 print("Error: Either --source or --repoless is required.")
                 print("  Use --source for repository-based sessions")
                 print("  Use --repoless for serverless sessions without a repo")
                 return 1
+            
             sessions.create_session(
-                prompt=args.prompt,
+                prompt=prompt,
                 source=args.source,
                 branch=args.branch,
                 title=args.title,

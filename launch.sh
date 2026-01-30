@@ -180,7 +180,58 @@ while true; do
             echo "  environment with Python, Node, Rust, Bun, etc."
             echo "  No repository needed!"
             echo ""
-            read -p "  What would you like Jules to do? " PROMPT
+            echo "   [1] Enter prompt as text"
+            echo "   [2] Load prompt from file (.md/.txt)"
+            echo "   [3] Load prompt from directory"
+            echo ""
+            read -p "  Select input type: " P_TYPE
+
+            if [ "$P_TYPE" == "2" ]; then
+                read -p "  Enter path to file: " P_FILE
+                PROMPT_ARG="-F $P_FILE"
+            elif [ "$P_TYPE" == "3" ]; then
+                read -p "  Enter directory path: " P_DIR
+                # Normalize path (remove trailing slash)
+                P_DIR="${P_DIR%/}"
+                
+                if [ ! -d "$P_DIR" ]; then
+                    echo "  ⚠ Directory not found: $P_DIR"
+                    read -p "  Press Enter to continue..."
+                    continue
+                fi
+
+                echo ""
+                echo "  Files in $P_DIR:"
+                i=0
+                files=()
+                # List MD and TXT files. Using find to handle spaces and hidden files better.
+                while IFS= read -r f; do
+                    ((i++))
+                    files[$i]="$f"
+                    echo "  [$i] $f"
+                done < <(find "$P_DIR" -maxdepth 1 -type f \( -name "*.md" -o -name "*.txt" \) -printf "%f\n" 2>/dev/null | sort)
+
+                if [ $i -eq 0 ]; then
+                    echo "  ⚠ No .md or .txt files found in $P_DIR"
+                    read -p "  Press Enter to continue..."
+                    continue
+                fi
+
+                echo ""
+                read -p "  Select file number: " P_NUM
+                SELECTED_FILE="${files[$P_NUM]}"
+                
+                if [ -z "$SELECTED_FILE" ]; then
+                    echo "  ⚠ Invalid selection."
+                    read -p "  Press Enter to continue..."
+                    continue
+                fi
+                PROMPT_ARG="-F \"$P_DIR/$SELECTED_FILE\""
+            else
+                read -p "  What would you like Jules to do? " P_TEXT
+                PROMPT_ARG="-p \"$P_TEXT\""
+            fi
+
             echo ""
             read -p "  Session title (optional): " TITLE
 
@@ -188,11 +239,13 @@ while true; do
             echo "  Creating repoless session..."
             echo ""
 
-            if [ -z "$TITLE" ]; then
-                run_cli sessions create -p "$PROMPT" --repoless
-            else
-                run_cli sessions create -p "$PROMPT" -t "$TITLE" --repoless
+            TITLE_ARG=""
+            if [ -n "$TITLE" ]; then
+                TITLE_ARG="-t \"$TITLE\""
             fi
+
+            # Using eval to handle quoted strings in PROMPT_ARG/TITLE_ARG correctly
+            eval "run_cli sessions create $PROMPT_ARG $TITLE_ARG --repoless"
 
             echo ""
             echo "  ✓ Repoless session created!"
