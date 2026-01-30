@@ -1,13 +1,16 @@
 # Jules API CLI
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 A command-line interface for the [Jules REST API](https://jules.google/docs/api/reference/) that provides simple, intuitive access to Jules's AI coding assistant capabilities.
 
 ## Features
 
-- **Sources** - List and inspect connected GitHub repositories
-- **Sessions** - Create, manage, and interact with coding sessions
-- **Activities** - Monitor session progress, plans, and responses
-- **Multiple output formats** - JSON, table, or minimal
+- **Sources** - List and inspect connected GitHub repositories.
+- **Sessions** - Create repository-based or **Repoless** (serverless) coding sessions.
+- **Activities** - Monitor real-time progress, plans, and AI responses.
+- **Workflow-Based UI** - Guided interactive menu for a seamless developer experience.
+- **Scriptable** - Full support for raw CLI flags and multiple output formats (JSON, Table, Minimal).
 
 ## Quick Start
 
@@ -15,22 +18,19 @@ A command-line interface for the [Jules REST API](https://jules.google/docs/api/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/jules_api_cli.git
+git clone https://github.com/krishnakanthb13/jules_api_cli.git
 cd jules_api_cli
 
 # Requires uv (fast Python package manager)
 # Install uv: pip install uv  OR  winget install astral-sh.uv
 
-# Use the launcher (uses global packages, installs missing ones)
+# Use the interactive launcher
 # Windows:
 launch.bat
 
 # Unix/Mac:
 chmod +x launch.sh
 ./launch.sh
-
-# Or run directly with uv:
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli --help
 ```
 
 ### 2. Configure
@@ -41,125 +41,94 @@ Get your API key from [jules.google.com/settings](https://jules.google.com/setti
 JULES_API_KEY=your-api-key-here
 ```
 
-### 3. Use
+### 3. Workflow Usage
 
-```bash
-# List your connected repositories
-launch.bat sources list
+The interactive launchers (`launch.bat` / `launch.sh`) guide you through a 4-step workflow:
 
-# Create a session
-launch.bat sessions create -p "Add unit tests for auth module" -s github-owner-repo
+1.  **STEP 1: Select a Repository** - List your connected GitHub sources and select one.
+2.  **STEP 2: Create a Session** - Start a new task (Repository-based or Repoless).
+3.  **STEP 3: Monitor & Interact** - Check status, view activities, send messages, or approve plans.
+4.  **STEP 4: View Results** - Get links to generated Pull Requests or change sets.
 
-# Check session status
-launch.bat sessions get <session_id>
+## Commands Reference
 
-# View activities (see what Jules is doing)
-launch.bat activities list <session_id>
-
-# Send a follow-up message
-launch.bat sessions send <session_id> "Also add integration tests"
-```
-
-## Commands
+If you prefer using the CLI directly without the interactive menu:
 
 ### Sources
-
 ```bash
 # List all connected repositories
-jules-cli sources list
-jules-cli sources list --format json
-jules-cli sources list --page-size 10
+python -m src.cli sources list --format table
 
 # Get details for a specific source
-jules-cli sources get github-owner-repo
+python -m src.cli sources get github-owner-repo
 ```
 
 ### Sessions
-
 ```bash
-# List all sessions
-jules-cli sessions list
+# Create a standard session
+python -m src.cli sessions create --prompt "Fix typo" --source github-owner-repo
 
-# Create a new session
-jules-cli sessions create \
-  --prompt "Fix the login bug" \
-  --source github-owner-repo \
-  --branch main \
-  --title "Login Bug Fix" \
-  --auto-pr
+# Create a REPOLESS session (serverless cloud environment)
+python -m src.cli sessions create --prompt "Write a python script to parse JSON" --repoless
 
-# Get session details
-jules-cli sessions get <session_id>
-
-# Send a message to an active session
-jules-cli sessions send <session_id> "Add error handling too"
-
-# Approve a pending plan (if --require-approval was used)
-jules-cli sessions approve <session_id>
-
-# Delete a session
-jules-cli sessions delete <session_id>
+# Interact with a session
+python -m src.cli sessions send <session_id> "Add more comments"
+python -m src.cli sessions approve <session_id>
 ```
 
 ### Activities
-
 ```bash
 # List activities for a session
-jules-cli activities list <session_id>
-jules-cli activities list <session_id> --page-size 20
+python -m src.cli activities list <session_id>
 
 # Get specific activity details
-jules-cli activities get <session_id> <activity_id>
+python -m src.cli activities get <session_id> <activity_id>
 ```
 
-### Global Options
+## Global Options
 
-```bash
---format, -f    Output format: json, table, minimal (default: table)
---version, -V   Show version
---help, -h      Show help
-```
+| Flag | Shortcut | Description |
+|:--- |:--- |:--- |
+| `--format` | `-f` | Output format: `json`, `table`, `minimal` (default: `table`) |
+| `--version` | `-V` | Show version information |
+| `--help` | `-h` | Show help for any command |
 
-## Session States
+## Reference Tables
 
-Sessions progress through these states:
-
+### Session States
 | State | Description |
-|-------|-------------|
-| `QUEUED` | Session is waiting to start |
-| `PLANNING` | Jules is creating a plan |
-| `AWAITING_PLAN_APPROVAL` | Plan needs approval (if `--require-approval` was set) |
-| `AWAITING_USER_FEEDBACK` | Jules is waiting for input |
-| `IN_PROGRESS` | Jules is executing the plan |
-| `PAUSED` | Session is paused |
-| `COMPLETED` | Session finished successfully |
-| `FAILED` | Session encountered an error |
+|:--- |:--- |
+| `QUEUED` | Session is waiting to start. |
+| `PLANNING` | Jules is creating a plan. |
+| `AWAITING_PLAN_APPROVAL` | Plan needs approval (if `--require-approval` was set). |
+| `AWAITING_USER_FEEDBACK` | Jules is waiting for your input. |
+| `IN_PROGRESS` | Jules is executing the plan. |
+| `PAUSED` | Session is paused. |
+| `COMPLETED` | Session finished successfully. |
+| `FAILED` | Session encountered an error. |
 
-## Activity Types
-
+### Activity Types
 | Type | Description |
-|------|-------------|
-| `planGenerated` | Jules created a plan |
-| `planApproved` | Plan was approved |
-| `userMessaged` | You sent a message |
-| `agentMessaged` | Jules responded |
-| `progressUpdated` | Status update during execution |
-| `sessionCompleted` | Session finished |
-| `sessionFailed` | Session failed |
+|:--- |:--- |
+| `planGenerated` | Jules created a proposed plan. |
+| `userMessaged` | You sent a message to the session. |
+| `agentMessaged` | Jules responded with a message. |
+| `progressUpdated` | A status update during execution. |
+| `sessionCompleted` | The task is finished. |
 
 ## Requirements
 
 - Python 3.9+
 - [uv](https://github.com/astral-sh/uv) (fast Python package manager)
 - Jules API key ([get one here](https://jules.google.com/settings))
-- At least one GitHub repository connected via the [Jules web app](https://jules.google.com)
+- At least one GitHub repository connected (for repository-based sessions)
 
 ## License
 
-MIT
+This project is licensed under the GNU GPL v3 License - see the [LICENSE](LICENSE) file for details.
 
 ## Links
 
 - [Jules Website](https://jules.google)
 - [API Documentation](https://jules.google/docs/api/reference/)
-- [Get API Key](https://jules.google.com/settings)
+- [Changelog](https://jules.google/docs/changelog/)
