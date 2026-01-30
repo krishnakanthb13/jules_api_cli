@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""
+Jules API CLI - Command-line interface for the Jules REST API.
+
+Usage:
+    python -m src.cli <command> <subcommand> [options]
+
+Examples:
+    python -m src.cli sources list
+    python -m src.cli sessions create --prompt "Add tests" --source github-owner-repo
+    python -m src.cli activities list <session_id>
+"""
+
+import argparse
+import sys
+
+from . import __version__
+from . import sources
+from . import sessions
+from . import activities
+
+
+def create_parser() -> argparse.ArgumentParser:
+    """Create the main argument parser."""
+    parser = argparse.ArgumentParser(
+        prog="jules-cli",
+        description="Command-line interface for the Jules REST API",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s sources list                     List connected repositories
+  %(prog)s sources get github-owner-repo    Get source details
+  
+  %(prog)s sessions list                    List all sessions
+  %(prog)s sessions create -p "Fix bug" -s github-owner-repo
+  %(prog)s sessions get <id>                Get session details
+  %(prog)s sessions send <id> "Add tests"   Send message to session
+  %(prog)s sessions approve <id>            Approve pending plan
+  %(prog)s sessions delete <id>             Delete a session
+  
+  %(prog)s activities list <session_id>     List session activities
+  %(prog)s activities get <session_id> <activity_id>
+
+Documentation: https://jules.google/docs/api/reference/
+        """,
+    )
+
+    parser.add_argument(
+        "--version", "-V",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
+
+    # Global format option
+    parser.add_argument(
+        "--format", "-f",
+        choices=["json", "table", "minimal"],
+        default="table",
+        help="Output format (default: table)",
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # ===== SOURCES =====
+    sources_parser = subparsers.add_parser("sources", help="Manage connected repositories")
+    sources_sub = sources_parser.add_subparsers(dest="subcommand")
+
+    # sources list
+    sources_list = sources_sub.add_parser("list", help="List all connected sources")
+    sources_list.add_argument(
+        "--page-size", "-n",
+        type=int,
+        default=30,
+        help="Number of results per page (default: 30)",
+    )
+    sources_list.add_argument(
+        "--filter",
+        dest="filter_expr",
+        help="AIP-160 filter expression (e.g., 'name=sources/github-owner-repo')",
+    )
+    sources_list.add_argument(
+        "--all", "-a",
+        action="store_true",
+        dest="all_pages",
+        help="Fetch all pages of results",
+    )
+
+    # sources get
+    sources_get = sources_sub.add_parser("get", help="Get source details")
+    sources_get.add_argument("source_id", help="Source ID (e.g., 'github-owner-repo')")
+
+    # ===== SESSIONS =====
+    sessions_parser = subparsers.add_parser("sessions", help="Manage coding sessions")
+    sessions_sub = sessions_parser.add_subparsers(dest="subcommand")
+
+    # sessions list
+    sessions_list = sessions_sub.add_parser("list", help="List all sessions")
+    sessions_list.add_argument(
+        "--page-size", "-n",
+        type=int,
+        default=30,
+        help="Number of results per page (default: 30)",
+    )
+    sessions_list.add_argument(
+        "--all", "-a",
+        action="store_true",
+        dest="all_pages",
+        help="Fetch all pages of results",
+    )
+
+    # sessions get
+    sessions_get = sessions_sub.add_parser("get", help="Get session details")
+    sessions_get.add_argument("session_id", help="Session ID")
+
+    # sessions create
+    sessions_create = sessions_sub.add_parser("create", help="Create a new session")
+    sessions_create.add_argument(
+        "--prompt", "-p",
+        required=True,
+        help="Task description for Jules (required)",
+    )
+    sessions_create.add_argument(
+        "--source", "-s",
+        required=True,
+        help="Source name (e.g., 'github-owner-repo') (required)",
+    )
+    sessions_create.add_argument(
+        "--branch", "-b",
+        default="main",
+        help="Starting branch (default: main)",
+    )
+    sessions_create.add_argument(
+        "--title", "-t",
+        help="Session title (optional)",
+    )
+    sessions_create.add_argument(
+        "--require-approval",
+        action="store_true",
+        help="Require explicit plan approval before execution",
+    )
+    sessions_create.add_argument(
+        "--auto-pr",
+        action="store_true",
+        help="Automatically create PR when code is ready",
+    )
+
+    # sessions delete
+    sessions_delete = sessions_sub.add_parser("delete", help="Delete a session")
+    sessions_delete.add_argument("session_id", help="Session ID to delete")
+
+    # sessions send
+    sessions_send = sessions_sub.add_parser("send", help="Send a message to a session")
+    sessions_send.add_argument("session_id", help="Session ID")
+    sessions_send.add_argument("message", help="Message to send")
+
+    # sessions approve
+    sessions_approve = sessions_sub.add_parser("approve", help="Approve a pending plan")
+    sessions_approve.add_argument("session_id", help="Session ID")
+
+    # ===== ACTIVITIES =====
+    activities_parser = subparsers.add_parser("activities", help="View session activities")
+    activities_sub = activities_parser.add_subparsers(dest="subcommand")
+
+    # activities list
+    activities_list = activities_sub.add_parser("list", help="List activities for a session")
+    activities_list.add_argument("session_id", help="Session ID")
+    activities_list.add_argument(
+        "--page-size", "-n",
+        type=int,
+        default=50,
+        help="Number of results per page (default: 50)",
+    )
+    activities_list.add_argument(
+        "--since",
+        help="Filter activities after this timestamp (ISO 8601)",
+    )
+    activities_list.add_argument(
+        "--all", "-a",
+        action="store_true",
+        dest="all_pages",
+        help="Fetch all pages of results",
+    )
+
+    # activities get
+    activities_get = activities_sub.add_parser("get", help="Get activity details")
+    activities_get.add_argument("session_id", help="Session ID")
+    activities_get.add_argument("activity_id", help="Activity ID")
+
+    return parser
+
+
+def main() -> int:
+    """Main entry point."""
+    parser = create_parser()
+    args = parser.parse_args()
+
+    # Get format from args (may not exist for all subcommands)
+    format_type = getattr(args, "format", "table")
+
+    if args.command is None:
+        parser.print_help()
+        return 0
+
+    # ===== SOURCES =====
+    if args.command == "sources":
+        if args.subcommand == "list":
+            sources.list_sources(
+                page_size=args.page_size,
+                filter_expr=args.filter_expr,
+                format_type=format_type,
+                all_pages=args.all_pages,
+            )
+        elif args.subcommand == "get":
+            sources.get_source(args.source_id, format_type=format_type)
+        else:
+            parser.parse_args(["sources", "--help"])
+            return 1
+
+    # ===== SESSIONS =====
+    elif args.command == "sessions":
+        if args.subcommand == "list":
+            sessions.list_sessions(
+                page_size=args.page_size,
+                format_type=format_type,
+                all_pages=args.all_pages,
+            )
+        elif args.subcommand == "get":
+            sessions.get_session(args.session_id, format_type=format_type)
+        elif args.subcommand == "create":
+            sessions.create_session(
+                prompt=args.prompt,
+                source=args.source,
+                branch=args.branch,
+                title=args.title,
+                require_approval=args.require_approval,
+                auto_pr=args.auto_pr,
+                format_type=format_type,
+            )
+        elif args.subcommand == "delete":
+            sessions.delete_session(args.session_id)
+        elif args.subcommand == "send":
+            sessions.send_message(args.session_id, args.message, format_type=format_type)
+        elif args.subcommand == "approve":
+            sessions.approve_plan(args.session_id)
+        else:
+            parser.parse_args(["sessions", "--help"])
+            return 1
+
+    # ===== ACTIVITIES =====
+    elif args.command == "activities":
+        if args.subcommand == "list":
+            activities.list_activities(
+                session_id=args.session_id,
+                page_size=args.page_size,
+                since=args.since,
+                format_type=format_type,
+                all_pages=args.all_pages,
+            )
+        elif args.subcommand == "get":
+            activities.get_activity(
+                session_id=args.session_id,
+                activity_id=args.activity_id,
+                format_type=format_type,
+            )
+        else:
+            parser.parse_args(["activities", "--help"])
+            return 1
+
+    else:
+        parser.print_help()
+        return 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
