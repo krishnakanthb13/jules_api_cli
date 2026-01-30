@@ -40,3 +40,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# notes
+RELEASE_NOTES.md
+SOCIAL_MEDIA.md
