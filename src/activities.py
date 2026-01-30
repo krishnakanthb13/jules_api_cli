@@ -64,7 +64,7 @@ def list_activities(
     since: Optional[str] = None,
     format_type: str = "table",
     all_pages: bool = False,
-) -> None:
+) -> bool:
     """
     List activities for a session.
 
@@ -75,6 +75,17 @@ def list_activities(
         format_type: Output format (json/table/minimal)
         all_pages: Fetch all pages
     """
+    if not 1 <= page_size <= 100:
+        print_error("page_size must be between 1 and 100")
+        return False
+    
+    if since:
+        import re
+        # Basic ISO 8601 check: 2026-01-31T00:00:00Z format
+        if not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", since):
+            print_error("since must be in ISO 8601 format (e.g., YYYY-MM-DDTHH:MM:SSZ)")
+            return False
+
     client = get_client()
     endpoint = f"sessions/{session_id}/activities"
 
@@ -89,7 +100,7 @@ def list_activities(
             data = client.get(endpoint, params)
             activities = data.get("activities", [])
 
-        if  format_type == "raw":
+        if format_type == "raw":
             output(activities, "json")
             return
 
@@ -109,16 +120,18 @@ def list_activities(
 
             columns = ["id", "type", "originator", "summary", "time"]
             output(display_data, format_type, columns=columns, minimal_key="id")
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
 def get_activity(
     session_id: str,
     activity_id: str,
     format_type: str = "table",
-) -> None:
+) -> bool:
     """
     Get details for a specific activity.
 
@@ -184,6 +197,8 @@ def get_activity(
                         display[f"artifact_{i + 1}"] = f"Media: {media.get('mimeType', '')}"
 
             output(display, format_type)
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False

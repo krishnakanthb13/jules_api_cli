@@ -93,6 +93,7 @@ python -m src.cli activities get <session_id> <activity_id>
 | Flag | Shortcut | Description |
 |:--- |:--- |:--- |
 | `--format` | `-f` | Output format: `json`, `table`, `minimal`, `raw` (default: `table`) |
+| `--verbose`| `-v` | Enable verbose logging (API requests and responses) |
 | `--prompt-file`| `-F` | (sessions create) Path to a `.md` or `.txt` file for the prompt |
 | `--version` | `-V` | Show version information |
 | `--help` | `-h` | Show help for any command |
@@ -123,9 +124,23 @@ python -m src.cli activities get <session_id> <activity_id>
 ## Requirements
 
 - Python 3.9+
-- [uv](https://github.com/astral-sh/uv) (fast Python package manager)
+- [uv](https://github.com/astral-sh/uv) or `pip`
 - Jules API key ([get one here](https://jules.google.com/settings))
 - At least one GitHub repository connected (for repository-based sessions)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/krishnakanthb13/jules_api_cli.git
+cd jules_api_cli
+
+# Using uv (recommended)
+uv sync
+
+# Or using pip
+pip install -e .
+```
 
 ## License
 

@@ -185,7 +185,6 @@ set /p P_TYPE="  Choice: "
 
 if "%P_TYPE%"=="2" (
     set /p P_FILE="  Enter path to file: "
-    set PROMPT_ARG=-F "!P_FILE!"
 ) else if "%P_TYPE%"=="3" (
     set /p P_DIR="  Enter directory path: "
     echo.
@@ -212,10 +211,9 @@ if "%P_TYPE%"=="2" (
         pause
         goto STEP2_REPOLESS
     )
-    set PROMPT_ARG=-F "!P_DIR!\!SELECTED_FILE!"
+    set "P_FILE=!P_DIR!\!SELECTED_FILE!"
 ) else (
     set /p P_TEXT="  What would you like Jules to do? "
-    set PROMPT_ARG=-p "!P_TEXT!"
 )
 
 echo.
@@ -225,10 +223,26 @@ echo.
 echo  Creating repoless session...
 echo.
 
-set TITLE_ARG=
-if not "%TITLE%"=="" set TITLE_ARG=-t "%TITLE%"
-
-uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create !PROMPT_ARG! !TITLE_ARG! --repoless
+REM Build command with proper escaping to avoid injection issues
+if "%P_TYPE%"=="2" (
+    if not "%TITLE%"=="" (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -F "!P_FILE!" -t "%TITLE%" --repoless
+    ) else (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -F "!P_FILE!" --repoless
+    )
+) else if "%P_TYPE%"=="3" (
+    if not "%TITLE%"=="" (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -F "!P_FILE!" -t "%TITLE%" --repoless
+    ) else (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -F "!P_FILE!" --repoless
+    )
+) else (
+    if not "%TITLE%"=="" (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "!P_TEXT!" -t "%TITLE%" --repoless
+    ) else (
+        uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions create -p "!P_TEXT!" --repoless
+    )
+)
 
 echo.
 echo  Repoless session created!

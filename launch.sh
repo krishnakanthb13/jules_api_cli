@@ -188,7 +188,6 @@ while true; do
 
             if [ "$P_TYPE" == "2" ]; then
                 read -p "  Enter path to file: " P_FILE
-                PROMPT_ARG="-F $P_FILE"
             elif [ "$P_TYPE" == "3" ]; then
                 read -p "  Enter directory path: " P_DIR
                 # Normalize path (remove trailing slash)
@@ -226,10 +225,9 @@ while true; do
                     read -p "  Press Enter to continue..."
                     continue
                 fi
-                PROMPT_ARG="-F \"$P_DIR/$SELECTED_FILE\""
+                P_FILE="$P_DIR/$SELECTED_FILE"
             else
                 read -p "  What would you like Jules to do? " P_TEXT
-                PROMPT_ARG="-p \"$P_TEXT\""
             fi
 
             echo ""
@@ -239,13 +237,18 @@ while true; do
             echo "  Creating repoless session..."
             echo ""
 
-            TITLE_ARG=""
+            # Build command arguments using arrays to avoid injection issues
+            cli_args=("sessions" "create" "--repoless")
+            if [ "$P_TYPE" == "2" ] || [ "$P_TYPE" == "3" ]; then
+                cli_args+=("-F" "$P_FILE")
+            else
+                cli_args+=("-p" "$P_TEXT")
+            fi
             if [ -n "$TITLE" ]; then
-                TITLE_ARG="-t \"$TITLE\""
+                cli_args+=("-t" "$TITLE")
             fi
 
-            # Using eval to handle quoted strings in PROMPT_ARG/TITLE_ARG correctly
-            eval "run_cli sessions create $PROMPT_ARG $TITLE_ARG --repoless"
+            run_cli "${cli_args[@]}"
 
             echo ""
             echo "  ✓ Repoless session created!"

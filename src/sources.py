@@ -11,7 +11,7 @@ def list_sources(
     filter_expr: Optional[str] = None,
     format_type: str = "table",
     all_pages: bool = False,
-) -> None:
+) -> bool:
     """
     List all connected sources (repositories).
 
@@ -21,17 +21,22 @@ def list_sources(
         format_type: Output format (json/table/minimal)
         all_pages: Fetch all pages instead of just the first
     """
+    if not 1 <= page_size <= 100:
+        print_error("page_size must be between 1 and 100")
+        return False
+
     client = get_client()
 
     try:
+        params = {"pageSize": page_size}
+        if filter_expr:
+            params["filter"] = filter_expr
+
         if all_pages:
             # Fetch all pages
-            sources = list(client.paginate("sources", page_size=page_size))
+            sources = list(client.paginate("sources", params=params, page_size=page_size))
         else:
             # Single page
-            params = {"pageSize": page_size}
-            if filter_expr:
-                params["filter"] = filter_expr
             data = client.get("sources", params)
             sources = data.get("sources", [])
 
@@ -54,11 +59,14 @@ def list_sources(
         columns = ["id", "owner", "repo", "private", "default_branch"]
         output(display_data, format_type, columns=columns, minimal_key="id")
 
+        return True
+
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
-def get_source(source_id: str, format_type: str = "table") -> None:
+def get_source(source_id: str, format_type: str = "table") -> bool:
     """
     Get details for a specific source.
 
@@ -95,6 +103,8 @@ def get_source(source_id: str, format_type: str = "table") -> None:
                 "branches": ", ".join(branch_names[:10]) + ("..." if len(branch_names) > 10 else ""),
             }
             output(display, format_type)
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False

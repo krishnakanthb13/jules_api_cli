@@ -51,12 +51,17 @@ Documentation: https://jules.google/docs/api/reference/
         version=f"%(prog)s {__version__}",
     )
 
-    # Global format option
+    # Global options
     parser.add_argument(
         "--format", "-f",
         choices=["json", "table", "minimal", "raw"],
         default="table",
         help="Output format (default: table)",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose logging",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -202,8 +207,13 @@ def main() -> int:
     parser = create_parser()
     args = parser.parse_args()
 
-    # Get format from args (may not exist for all subcommands)
+    # Get global options
     format_type = getattr(args, "format", "table")
+    verbose = getattr(args, "verbose", False)
+
+    # Initialize client if needed
+    from .jules_client import get_client
+    get_client(verbose=verbose)
 
     if args.command is None:
         parser.print_help()

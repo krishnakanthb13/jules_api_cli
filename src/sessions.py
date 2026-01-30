@@ -10,7 +10,7 @@ def list_sessions(
     page_size: int = 30,
     format_type: str = "table",
     all_pages: bool = False,
-) -> None:
+) -> bool:
     """
     List all sessions.
 
@@ -19,6 +19,10 @@ def list_sessions(
         format_type: Output format (json/table/minimal)
         all_pages: Fetch all pages instead of just the first
     """
+    if not 1 <= page_size <= 100:
+        print_error("page_size must be between 1 and 100")
+        return False
+
     client = get_client()
 
     try:
@@ -44,12 +48,14 @@ def list_sessions(
 
         columns = ["id", "title", "state", "created"]
         output(display_data, format_type, columns=columns, minimal_key="id")
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
-def get_session(session_id: str, format_type: str = "table") -> None:
+def get_session(session_id: str, format_type: str = "table") -> bool:
     """
     Get details for a specific session.
 
@@ -85,9 +91,11 @@ def get_session(session_id: str, format_type: str = "table") -> None:
                 "pull_requests": ", ".join(pr_urls) if pr_urls else "None",
             }
             output(display, format_type)
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
 def create_session(
@@ -99,7 +107,7 @@ def create_session(
     auto_pr: bool = False,
     repoless: bool = False,
     format_type: str = "table",
-) -> None:
+) -> bool:
     """
     Create a new session.
 
@@ -158,12 +166,14 @@ def create_session(
                 "type": "Repoless" if repoless else "Repository-based",
             }
             output(display, format_type)
+        return True
 
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
-def delete_session(session_id: str) -> None:
+def delete_session(session_id: str) -> bool:
     """
     Delete a session.
 
@@ -175,11 +185,13 @@ def delete_session(session_id: str) -> None:
     try:
         client.delete(f"sessions/{session_id}")
         print_success(f"Session {session_id} deleted.")
+        return True
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
-def send_message(session_id: str, message: str, format_type: str = "table") -> None:
+def send_message(session_id: str, message: str, format_type: str = "table") -> bool:
     """
     Send a message to an active session.
 
@@ -193,11 +205,13 @@ def send_message(session_id: str, message: str, format_type: str = "table") -> N
     try:
         client.post(f"sessions/{session_id}:sendMessage", {"prompt": message})
         print_success("Message sent. Use 'activities list' to see the response.")
+        return True
     except JulesAPIError as e:
         print_error(str(e))
+        return False
 
 
-def approve_plan(session_id: str) -> None:
+def approve_plan(session_id: str) -> bool:
     """
     Approve a pending plan in a session.
 
@@ -209,5 +223,7 @@ def approve_plan(session_id: str) -> None:
     try:
         client.post(f"sessions/{session_id}:approvePlan", {})
         print_success(f"Plan approved for session {session_id}.")
+        return True
     except JulesAPIError as e:
         print_error(str(e))
+        return False

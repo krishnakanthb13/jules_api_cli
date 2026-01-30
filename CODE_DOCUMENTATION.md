@@ -35,11 +35,22 @@ The application follows a modular architecture where the CLI logic is separated 
 | Module | Description | Key Functions |
 |:--- |:--- |:--- |
 | `cli.py` | Command-line interface definition. | `main()`, `create_parser()` |
-| `jules_client.py` | Handles HTTP requests and API key management. | `JulesClient`, `get_client()` |
+| `jules_client.py` | Handles robust API interaction, retries, and logging. | `JulesClient`, `get_client()` |
 | `sessions.py` | Manages AI coding sessions. | `create_session()`, `list_sessions()`, `get_session()` |
 | `activities.py` | Tracks what the agent is doing. | `list_activities()`, `get_activity()` |
 | `sources.py` | Manages connected repositories. | `list_sources()`, `get_source()` |
 | `utils.py` | Formatting output (tables, JSON, minimal, raw). | `output()`, `print_error()`, `print_success()` |
+
+### API Client Features
+
+The `JulesClient` implementation in `jules_client.py` provides several robustness features:
+
+- **Authentication**: Injects `x-goog-api-key` and `Content-Type` headers into every request.
+- **Retries**: Implements a retry strategy for transient errors (HTTP 429, 500, 502, 503, 504) with exponential backoff.
+- **Timeouts**: Enforces a 30-second timeout on all requests to avoid indefinite hanging.
+- **Pagination**: Provides a generator-based `paginate()` method for easy traversal of large resource lists.
+- **Verbose Logging**: When initialized with `verbose=True`, logs raw HTTP methods, URLs, and response codes to `stderr`.
+- **Error Handling**: Custom `JulesAPIError` extracts detailed error messages from the API response and includes the failed request context.
 
 ## Execution Flow
 
