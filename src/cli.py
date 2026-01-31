@@ -20,6 +20,47 @@ from . import sessions
 from . import activities
 
 
+def _add_create_session_args(parser: argparse.ArgumentParser) -> None:
+    """Add arguments for creating a session."""
+    parser.add_argument(
+        "--prompt", "-p",
+        help="Task description for Jules",
+    )
+    parser.add_argument(
+        "--prompt-file", "-F",
+        help="Path to a .md or .txt file containing the prompt",
+    )
+    parser.add_argument(
+        "--source", "-s",
+        default=None,
+        help="Source name (e.g., 'github-owner-repo'). Not needed with --repoless. If omitted, tries to infer from git remote.",
+    )
+    parser.add_argument(
+        "--branch", "-b",
+        default="main",
+        help="Starting branch (default: main)",
+    )
+    parser.add_argument(
+        "--title", "-t",
+        help="Session title (optional)",
+    )
+    parser.add_argument(
+        "--repoless", "-r",
+        action="store_true",
+        help="Create a repoless session (serverless dev environment, no repo needed)",
+    )
+    parser.add_argument(
+        "--require-approval",
+        action="store_true",
+        help="Require explicit plan approval before execution",
+    )
+    parser.add_argument(
+        "--auto-pr",
+        action="store_true",
+        help="Automatically create PR when code is ready (not for repoless)",
+    )
+
+
 def create_parser() -> argparse.ArgumentParser:
     """Create the main argument parser."""
     parser = argparse.ArgumentParser(
@@ -32,7 +73,9 @@ Examples:
   %(prog)s sources get github-owner-repo    Get source details
   
   %(prog)s sessions list                    List all sessions
-  %(prog)s sessions create -p "Fix bug" -s github-owner-repo
+  %(prog)s sessions list                    List all sessions
+  %(prog)s task "Fix bug"                   Create a task (shortcut)
+  %(prog)s sessions create -p "Fix bug"     Create a session
   %(prog)s sessions get <id>                Get session details
   %(prog)s sessions send <id> "Add tests"   Send message to session
   %(prog)s sessions approve <id>            Approve pending plan
@@ -119,43 +162,12 @@ Documentation: https://jules.google/docs/api/reference/
 
     # sessions create
     sessions_create = sessions_sub.add_parser("create", help="Create a new session")
-    sessions_create.add_argument(
-        "--prompt", "-p",
-        help="Task description for Jules",
-    )
-    sessions_create.add_argument(
-        "--prompt-file", "-F",
-        help="Path to a .md or .txt file containing the prompt",
-    )
-    sessions_create.add_argument(
-        "--source", "-s",
-        default=None,
-        help="Source name (e.g., 'github-owner-repo'). Not needed with --repoless",
-    )
-    sessions_create.add_argument(
-        "--branch", "-b",
-        default="main",
-        help="Starting branch (default: main)",
-    )
-    sessions_create.add_argument(
-        "--title", "-t",
-        help="Session title (optional)",
-    )
-    sessions_create.add_argument(
-        "--repoless", "-r",
-        action="store_true",
-        help="Create a repoless session (serverless dev environment, no repo needed)",
-    )
-    sessions_create.add_argument(
-        "--require-approval",
-        action="store_true",
-        help="Require explicit plan approval before execution",
-    )
-    sessions_create.add_argument(
-        "--auto-pr",
-        action="store_true",
-        help="Automatically create PR when code is ready (not for repoless)",
-    )
+    _add_create_session_args(sessions_create)
+
+    # sessions sync
+    sessions_sync = sessions_sub.add_parser("sync", help="Sync/Checkout the branch for a session")
+    sessions_sync.add_argument("session_id", help="Session ID")
+
 
     # sessions delete
     sessions_delete = sessions_sub.add_parser("delete", help="Delete a session")
@@ -198,6 +210,10 @@ Documentation: https://jules.google/docs/api/reference/
     activities_get = activities_sub.add_parser("get", help="Get activity details")
     activities_get.add_argument("session_id", help="Session ID")
     activities_get.add_argument("activity_id", help="Activity ID")
+
+    # ===== TASK (Alias) =====
+    task_parser = subparsers.add_parser("task", help="Create a new task (alias for sessions create)")
+    _add_create_session_args(task_parser)
 
     return parser
 
@@ -280,6 +296,8 @@ def main() -> int:
                 repoless=args.repoless,
                 format_type=format_type,
             )
+        elif args.subcommand == "sync":
+            sessions.sync_session(args.session_id)
         elif args.subcommand == "delete":
             sessions.delete_session(args.session_id)
         elif args.subcommand == "send":
@@ -309,6 +327,38 @@ def main() -> int:
         else:
             parser.parse_args(["activities", "--help"])
             return 1
+
+    # ===== TASK =====
+    elif args.command == "task":
+        # Handle prompt from file
+        prompt = args.prompt
+        if args.prompt_file:
+            try:
+                import os
+                if not os.path.exists(args.prompt_file):
+                    print(f"Error: Prompt file not found: {args.prompt_file}")
+                    return 1
+                with open(args.prompt_file, "r", encoding="utf-8") as f:
+                    prompt = f.read()
+            except Exception as e:
+                print(f"Error reading prompt file: {e}")
+                return 1
+
+        if not prompt:
+            print("Error: Either --prompt or --prompt-file is required.")
+            return 1
+
+        # Logic for source inference handles the rest
+        sessions.create_session(
+            prompt=prompt,
+            source=args.source,
+            branch=args.branch,
+            title=args.title,
+            require_approval=args.require_approval,
+            auto_pr=args.auto_pr,
+            repoless=args.repoless,
+            format_type=format_type,
+        )
 
     else:
         parser.print_help()

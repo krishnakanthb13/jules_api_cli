@@ -90,3 +90,50 @@ def print_error(message: str) -> None:
 def print_success(message: str) -> None:
     """Print a success message."""
     print(f"✓ {message}")
+
+
+def get_git_remote_url() -> Optional[str]:
+    """
+    Get the remote origin URL of the current git repository.
+    Returns None if not in a git repo or no remote found.
+    """
+    import subprocess
+    
+    try:
+        # Check if inside git tree
+        subprocess.check_call(
+            ["git", "rev-parse", "--is-inside-work-tree"], 
+            stdout=subprocess.DEVNULL, 
+            stderr=subprocess.DEVNULL
+        )
+        # Get URL
+        url = subprocess.check_output(
+            ["git", "config", "--get", "remote.origin.url"], 
+            stderr=subprocess.DEVNULL
+        ).decode("utf-8").strip()
+        return url
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def parse_source_from_url(url: str) -> Optional[str]:
+    """
+    Extract 'owner/repo' from a GitHub URL.
+    Handles SSH (git@github.com:owner/repo.git) and HTTPS (https://github.com/owner/repo.git).
+    """
+    if not url:
+        return None
+    
+    # Remove .git suffix
+    if url.endswith(".git"):
+        url = url[:-4]
+        
+    # Handle SSH
+    if "git@github.com:" in url:
+        return url.split("git@github.com:")[-1]
+    
+    # Handle HTTPS
+    if "github.com/" in url:
+        return url.split("github.com/")[-1]
+        
+    return None

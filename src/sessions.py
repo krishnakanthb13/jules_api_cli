@@ -3,7 +3,8 @@
 from typing import Optional
 
 from .jules_client import get_client, JulesAPIError
-from .utils import output, print_error, print_success
+from .jules_client import get_client, JulesAPIError
+from .utils import output, print_error, print_success, get_git_remote_url, parse_source_from_url
 
 
 def list_sessions(
@@ -127,8 +128,20 @@ def create_session(
         "prompt": prompt,
     }
 
-    # Only add sourceContext if not repoless and source is provided
-    if not repoless and source:
+    # Only add sourceContext if not repoless
+    if not repoless:
+        # Try to infer source if not provided
+        if not source:
+            url = get_git_remote_url()
+            inferred = parse_source_from_url(url)
+            if inferred:
+                print(f"Inferred source from git: {inferred}")
+                source = inferred
+            else:
+                print_error("Could not infer repository from current directory.")
+                print_error("Please specify --source or use --repoless")
+                return False
+
         # Ensure source has proper prefix
         if not source.startswith("sources/"):
             source = f"sources/{source}"
@@ -226,4 +239,46 @@ def approve_plan(session_id: str) -> bool:
         return True
     except JulesAPIError as e:
         print_error(str(e))
+        return False
+
+
+def sync_session(session_id: str) -> bool:
+    """
+    Sync (checkout) the branch associated with a session.
+    
+    Args:
+        session_id: The session ID
+    """
+    client = get_client()
+    try:
+        # Get session details
+        data = client.get(f"sessions/{session_id}")
+        outputs = data.get("outputs", [])
+        
+        branch_name = None
+        for out in outputs:
+            pr = out.get("pullRequest", {})
+            if pr.get("branchName"):
+                branch_name = pr.get("branchName")
+                break
+        
+        if not branch_name:
+            print_error(f"No branch found for session {session_id}. Has it created a PR yet?")
+            return False
+            
+        import subprocess
+        print(f"Syncing branch: {branch_name}...")
+        
+        # Fetch and checkout
+        subprocess.check_call(["git", "fetch", "origin", branch_name])
+        subprocess.check_call(["git", "checkout", branch_name])
+        
+        print_success(f"Checked out branch: {branch_name}")
+        return True
+        
+    except JulesAPIError as e:
+        print_error(str(e))
+        return False
+    except Exception as e:
+        print_error(f"Git operation failed: {e}")
         return False
