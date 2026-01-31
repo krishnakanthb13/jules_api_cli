@@ -10,8 +10,10 @@ A command-line interface for the [Jules REST API](https://jules.google/docs/api/
 
 - **Sources** - List and inspect connected GitHub repositories.
 - **Sessions** - Create repository-based or **Repoless** (serverless) coding sessions.
+- **Inference** - Automatically detects the repository you are working in.
+- **Parallel Tasks** - Spawn multiple brainstorming sessions (`--parallel 5`) at once.
 - **Activities** - Monitor real-time progress, plans, and AI responses.
-- **Workflow-Based UI** - Guided interactive menu for a seamless developer experience.
+- **TUI & Diff Viewer** - Full terminal dashboard with side-by-side diffs.
 - **Scriptable** - Full support for raw CLI flags and multiple output formats (JSON, Table, Minimal).
 
 ## Quick Start
@@ -37,11 +39,12 @@ chmod +x launch.sh
 
 ### 2. Configure
 
-Get your API key from [jules.google.com/settings](https://jules.google.com/settings) and add it to `.env`:
+Get your API key from [jules.google.com/settings](https://jules.google.com/settings) and log in:
 
-```env
-JULES_API_KEY=your-api-key-here
+```bash
+python -m src.cli auth login
 ```
+*Allows pasting your key securely.*
 
 ### 3. Workflow Usage
 
@@ -56,6 +59,12 @@ The interactive launchers (`launch.bat` / `launch.sh`) guide you through a 4-ste
 
 If you prefer using the CLI directly without the interactive menu:
 
+### Dashboard (TUI)
+Launch the full interactive dashboard:
+```bash
+python -m src.cli tui
+```
+
 ### Sources
 ```bash
 # List all connected repositories
@@ -65,16 +74,19 @@ python -m src.cli sources list --format table
 python -m src.cli sources get github-owner-repo
 ```
 
-### Sessions
+### Sessions & Tasks
 ```bash
-# Create a standard session
-python -m src.cli sessions create --prompt "Fix typo" --source github-owner-repo
+# Create a task (auto-detects repo from current directory)
+python -m src.cli task "Fix typo in README"
+
+# Create multiple parallel brainstorming sessions
+python -m src.cli task "Propose 3 different UI designs" --parallel 3
 
 # Create a REPOLESS session using a text prompt
-python -m src.cli sessions create --prompt "Write a python script to parse JSON" --repoless
+python -m src.cli task "Write a python script to parse JSON" --repoless
 
-# Create a REPOLESS session using a file (.md or .txt)
-python -m src.cli sessions create --prompt-file ./task.md --repoless
+# Sync the code (fetch & checkout branch) from a session
+python -m src.cli sessions sync <session_id>
 
 # Interact with a session
 python -m src.cli sessions send <session_id> "Add more comments"
@@ -128,7 +140,17 @@ python -m src.cli activities get <session_id> <activity_id>
 - Python 3.9+
 - [uv](https://github.com/astral-sh/uv) or `pip`
 - Jules API key ([get one here](https://jules.google.com/settings))
-- At least one GitHub repository connected (for repository-based sessions)
+- Git (for `sync` and `diff` features)
+
+### Autocompletion
+Generate a completion script for your shell:
+```bash
+# PowerShell
+python -m src.cli completion powershell | Out-String | Invoke-Expression
+
+# Bash
+eval "$(python -m src.cli completion bash)"
+```
 
 ### Installation
 

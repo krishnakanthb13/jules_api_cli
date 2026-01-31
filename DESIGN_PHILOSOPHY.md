@@ -17,12 +17,16 @@ The CLI intentionally abstracts away the complex JSON structures of the Jules AP
 ### 2. Interactive First, Scriptable Always
 While we provide a rich interactive menu for beginners, every action can be run directly from the CLI with flags, making it perfectly suitable for CI/CD pipelines or local automation scripts.
 
-### 3. Repoless Mode Support
+3.  **Repoless Mode Support**
 We've integrated "Repoless" sessions as a first-class citizen, allowing users to spawn ephemeral dev environments without the overhead of connecting a specific GitHub repository.
 
+### 4. Power without Complexity
+Advanced features like **Parallel Execution** (brainstorming), **Auth Management**, and the **TUI Dashboard** are layered on top. The base experience remains simple, but the "Pro" features are instantly accessible via flags or subcommands.
+
 ## Use Cases
-- **Quick Bug Fixes**: Prompting Jules to fix a bug in a specific branch from the comfort of the terminal.
-- **Activity Monitoring**: Checking exactly what an agent is doing during a long-running plan without opening a browser.
+- **Quick Bug Fixes**: Prompting Jules to fix a bug in a specific branch from the comfort of the terminal using Auto-Inference.
+- **Brainstorming**: Using `jules-cli task "Idea" --parallel 5` to get 5 unique perspectives in seconds.
+- **Code Review**: Using the **TUI** to inspect the diffs of generated code side-by-side without leaving the terminal.
 - **CI/CD Integration**: Automatically creating a Jules session as part of a pipeline to generate unit tests or documentation.
 
 ## Constraints & Trade-offs

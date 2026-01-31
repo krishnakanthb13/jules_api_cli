@@ -18,7 +18,11 @@ jules_api_cli/
     ├── sessions.py       # Session management logic
     ├── activities.py     # Activity monitoring logic
     ├── sources.py        # Repository source management
-    └── utils.py          # Helper utilities for formatting
+    ├── auth.py           # Authentication and .env management
+    ├── completion.py     # Shell autocompletion generator
+    ├── utils.py          # Helper utilities for formatting
+    └── tui/              # Terminal UI package
+        └── app.py        # Textual TUI Application logic
 ```
 
 ## Architecture
@@ -39,7 +43,10 @@ The application follows a modular architecture where the CLI logic is separated 
 | `sessions.py` | Manages AI coding sessions. | `create_session()`, `list_sessions()`, `get_session()` |
 | `activities.py` | Tracks what the agent is doing. | `list_activities()`, `get_activity()` |
 | `sources.py` | Manages connected repositories. | `list_sources()`, `get_source()` |
-| `utils.py` | Formatting output (tables, JSON, minimal, raw). | `output()`, `print_error()`, `print_success()` |
+| `auth.py` | Interactively saves API keys. | `login()` |
+| `completion.py` | Generates shell scripts. | `install_completion()` |
+| `tui/app.py` | Renders the Textual-based UI. | `JulesTUI`, `SessionDetails` |
+| `utils.py` | Formatting output and Git detection. | `output()`, `get_git_remote_url()` |
 
 ### API Client Features
 
@@ -67,4 +74,5 @@ The `JulesClient` implementation in `jules_client.py` provides several robustnes
 - **Requests**: For HTTP communication.
 - **Python-dotenv**: For loading the API key from `.env`.
 - **Tabulate**: For pretty-printing tables in the terminal.
+- **Rich / Textual**: For the modern TUI and diff rendering.
 - **uv**: Managed via the launcher for fast dependency handling and execution.
