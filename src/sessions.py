@@ -108,9 +108,10 @@ def create_session(
     auto_pr: bool = False,
     repoless: bool = False,
     format_type: str = "table",
+    parallel: int = 1,
 ) -> bool:
     """
-    Create a new session.
+    Create a new session (or multiple sessions in parallel).
 
     Args:
         prompt: Task description for Jules
@@ -121,7 +122,36 @@ def create_session(
         auto_pr: Automatically create PR when ready
         repoless: Create a repoless session (no repository needed)
         format_type: Output format (json/table/minimal)
+        parallel: Number of parallel sessions to create (default 1)
     """
+    # ... logic for single vs parallel ...
+    if parallel > 1:
+        import concurrent.futures
+        print(f"Starting {parallel} parallel sessions...")
+        
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+            # We call this function recursively with parallel=1
+            futures = [
+                executor.submit(
+                    create_session, 
+                    prompt, source, branch, 
+                    f"{title} ({i+1})" if title else None, 
+                    require_approval, auto_pr, repoless, "minimal", 1
+                ) for i in range(parallel)
+            ]
+            
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    print_error(f"Thread failed: {e}")
+                    results.append(False)
+        
+        success_count = sum(1 for r in results if r)
+        print(f"\nCreated {success_count}/{parallel} sessions successfully.")
+        return success_count > 0
+
     client = get_client()
 
     body = {

@@ -17,7 +17,9 @@ import sys
 from . import __version__
 from . import sources
 from . import sessions
+from . import sessions
 from . import activities
+from . import auth
 
 
 def _add_create_session_args(parser: argparse.ArgumentParser) -> None:
@@ -59,6 +61,12 @@ def _add_create_session_args(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Automatically create PR when code is ready (not for repoless)",
     )
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        help="Number of parallel sessions to start (default: 1)",
+    )
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -79,7 +87,10 @@ Examples:
   %(prog)s sessions get <id>                Get session details
   %(prog)s sessions send <id> "Add tests"   Send message to session
   %(prog)s sessions approve <id>            Approve pending plan
+  %(prog)s sessions approve <id>            Approve pending plan
   %(prog)s sessions delete <id>             Delete a session
+  
+  %(prog)s auth login                       Login with API Key
   
   %(prog)s activities list <session_id>     List session activities
   %(prog)s activities get <session_id> <activity_id>
@@ -209,7 +220,13 @@ Documentation: https://jules.google/docs/api/reference/
     # activities get
     activities_get = activities_sub.add_parser("get", help="Get activity details")
     activities_get.add_argument("session_id", help="Session ID")
+    activities_get.add_argument("session_id", help="Session ID")
     activities_get.add_argument("activity_id", help="Activity ID")
+
+    # ===== AUTH =====
+    auth_parser = subparsers.add_parser("auth", help="Manage authentication")
+    auth_sub = auth_parser.add_subparsers(dest="subcommand")
+    auth_sub.add_parser("login", help="Login securely with API Key")
 
     # ===== TASK (Alias) =====
     task_parser = subparsers.add_parser("task", help="Create a new task (alias for sessions create)")
@@ -295,6 +312,7 @@ def main() -> int:
                 auto_pr=args.auto_pr,
                 repoless=args.repoless,
                 format_type=format_type,
+                parallel=args.parallel,
             )
         elif args.subcommand == "sync":
             sessions.sync_session(args.session_id)
@@ -328,6 +346,15 @@ def main() -> int:
             parser.parse_args(["activities", "--help"])
             return 1
 
+    # ===== AUTH =====
+    elif args.command == "auth":
+        if args.subcommand == "login":
+            if not auth.login():
+                return 1
+        else:
+            parser.parse_args(["auth", "--help"])
+            return 1
+
     # ===== TASK =====
     elif args.command == "task":
         # Handle prompt from file
@@ -358,6 +385,7 @@ def main() -> int:
             auto_pr=args.auto_pr,
             repoless=args.repoless,
             format_type=format_type,
+            parallel=args.parallel,
         )
 
     else:
