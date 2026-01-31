@@ -1,6 +1,6 @@
 [project]
 name = "jules-api-cli"
-version = "0.0.7"
+version = "0.0.14"
 description = "Command-line interface for the Jules REST API"
 authors = [
     { name = "Krishna Kanth B" }

@@ -64,13 +64,17 @@ echo   [5] View activities
 echo   [6] Send a message
 echo   [7] Approve plan
 echo.
+echo.
 echo   STEP 4: View Results
 echo   [8] View session outputs (PRs/files)
+echo   [9] Sync Code (Fetch ^& Checkout)
 echo.
 echo  --------------------------------------------
 echo   OTHER
-echo   [9] List all my sessions
-echo   [10] Switch to different session
+echo   [10] List all my sessions
+echo   [11] Switch to different session
+echo   [12] Launch TUI Dashboard
+echo   [13] Authenticate (Login)
 echo   [0] Exit
 echo  ============================================
 echo.
@@ -85,8 +89,11 @@ if "%CHOICE%"=="5" goto STEP3_ACTIVITIES
 if "%CHOICE%"=="6" goto STEP3_MESSAGE
 if "%CHOICE%"=="7" goto STEP3_APPROVE
 if "%CHOICE%"=="8" goto STEP4_RESULTS
-if "%CHOICE%"=="9" goto LIST_SESSIONS
-if "%CHOICE%"=="10" goto SWITCH_SESSION
+if "%CHOICE%"=="9" goto STEP4_SYNC
+if "%CHOICE%"=="10" goto LIST_SESSIONS
+if "%CHOICE%"=="11" goto SWITCH_SESSION
+if "%CHOICE%"=="12" goto LAUNCH_TUI
+if "%CHOICE%"=="13" goto AUTH_LOGIN
 
 echo  Invalid choice.
 timeout /t 1 >nul
@@ -398,6 +405,39 @@ if not "%NEW_SESSION%"=="" set CURRENT_SESSION=%NEW_SESSION%
 echo.
 echo  Switched to session: %CURRENT_SESSION%
 echo.
+pause
+goto MAIN_MENU
+
+:STEP4_SYNC
+cls
+echo.
+echo  ============================================
+echo   STEP 4: Sync Code (Fetch ^& Checkout)
+echo  ============================================
+echo.
+if not defined CURRENT_SESSION (
+    echo  No session selected! Create one in Step 2 or use option 10.
+    echo.
+    pause
+    goto MAIN_MENU
+)
+echo  Session: %CURRENT_SESSION%
+echo.
+echo  Syncing code...
+echo.
+uv run --with requests --with python-dotenv --with tabulate python -m src.cli sessions sync "%CURRENT_SESSION%"
+echo.
+pause
+goto MAIN_MENU
+
+:LAUNCH_TUI
+cls
+uv run --with requests --with python-dotenv --with tabulate --with textual --with rich python -m src.cli tui
+goto MAIN_MENU
+
+:AUTH_LOGIN
+cls
+uv run --with requests --with python-dotenv --with tabulate --with textual --with rich python -m src.cli auth login
 pause
 goto MAIN_MENU
 

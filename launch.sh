@@ -73,11 +73,14 @@ while true; do
     echo ""
     echo "   STEP 4: View Results"
     echo "   [8] View session outputs (PRs/files)"
+    echo "   [9] Sync Code (Fetch & Checkout)"
     echo ""
     echo "  --------------------------------------------"
     echo "   OTHER"
-    echo "   [9] List all my sessions"
-    echo "   [10] Switch to different session"
+    echo "   [10] List all my sessions"
+    echo "   [11] Switch to different session"
+    echo "   [12] Launch TUI Dashboard"
+    echo "   [13] Authenticate (Login)"
     echo "   [0] Exit"
     echo "  ============================================"
     echo ""
@@ -374,9 +377,34 @@ while true; do
             ;;
 
         # ============================================
-        # OTHER OPTIONS
+        # STEP 4: Sync Code
         # ============================================
         9)
+            clear
+            echo ""
+            echo "  ============================================"
+            echo "   STEP 4: Sync Code (Fetch & Checkout)"
+            echo "  ============================================"
+            echo ""
+            if [ -z "$CURRENT_SESSION" ]; then
+                echo "  ⚠ No session selected! Create one in Step 2 or use option [10]."
+                echo ""
+                read -p "  Press Enter to continue..."
+                continue
+            fi
+            echo "  Session: $CURRENT_SESSION"
+            echo ""
+            echo "  Syncing code..."
+            echo ""
+            run_cli sessions sync "$CURRENT_SESSION"
+            echo ""
+            read -p "  Press Enter to continue..."
+            ;;
+
+        # ============================================
+        # OTHER OPTIONS
+        # ============================================
+        10)
             clear
             echo ""
             echo "  ============================================"
@@ -388,7 +416,7 @@ while true; do
             read -p "  Press Enter to continue..."
             ;;
 
-        10)
+        11)
             clear
             echo ""
             echo "  ============================================"
@@ -406,6 +434,17 @@ while true; do
                 echo "  ✓ Switched to session: $CURRENT_SESSION"
             fi
             echo ""
+            read -p "  Press Enter to continue..."
+            ;;
+
+        12)
+            clear
+            uv run --with requests --with python-dotenv --with tabulate --with textual --with rich python -m src.cli tui
+            ;;
+
+        13)
+            clear
+            uv run --with requests --with python-dotenv --with tabulate --with textual --with rich python -m src.cli auth login
             read -p "  Press Enter to continue..."
             ;;
 
