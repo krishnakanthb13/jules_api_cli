@@ -20,6 +20,9 @@ from . import sessions
 from . import sessions
 from . import activities
 from . import auth
+from . import auth
+from . import completion
+from .tui import app as tui_app
 
 
 def _add_create_session_args(parser: argparse.ArgumentParser) -> None:
@@ -228,6 +231,13 @@ Documentation: https://jules.google/docs/api/reference/
     auth_sub = auth_parser.add_subparsers(dest="subcommand")
     auth_sub.add_parser("login", help="Login securely with API Key")
 
+    # ===== COMPLETION =====
+    completion_parser = subparsers.add_parser("completion", help="Generate shell completion scripts")
+    completion_parser.add_argument("shell", choices=["bash", "powershell"], help="Shell to generate completion for")
+
+    # ===== TUI =====
+    subparsers.add_parser("tui", help="Launch the interactive terminal UI")
+
     # ===== TASK (Alias) =====
     task_parser = subparsers.add_parser("task", help="Create a new task (alias for sessions create)")
     _add_create_session_args(task_parser)
@@ -354,6 +364,15 @@ def main() -> int:
         else:
             parser.parse_args(["auth", "--help"])
             return 1
+
+    # ===== COMPLETION =====
+    elif args.command == "completion":
+        if not completion.install_completion(args.shell):
+            return 1
+
+    # ===== TUI =====
+    elif args.command == "tui":
+        tui_app.run_tui()
 
     # ===== TASK =====
     elif args.command == "task":
